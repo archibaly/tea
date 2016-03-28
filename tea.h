@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-int encrypt(uint8_t *src, int size_src, uint8_t *key);
-int decrypt(uint8_t *src, int size_src, uint8_t *key);
+int tea_encrypt(uint8_t *src, int size_src, uint8_t *key);
+int tea_decrypt(uint8_t *src, int size_src, uint8_t *key);
 
 #endif /* _TEA_H_ */
