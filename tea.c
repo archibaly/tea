@@ -4,7 +4,7 @@
  * @v: the data need to be encrypted, must be 8 bytes long
  * @k: key, must be 16 bytes long
  */
-static void encrypt(uint32_t *v, uint32_t *k)
+static void encrypt(uint32_t *v, const uint32_t *k)
 {
 	uint32_t y = v[0], z = v[1], sum = 0, i;
 	uint32_t delta = 0x9e3779b9;
@@ -24,7 +24,7 @@ static void encrypt(uint32_t *v, uint32_t *k)
  * @v: the data need to be encrypted, must be 8 bytes long
  * @k: key, must be 16 bytes long
  */
-static void decrypt(uint32_t *v, uint32_t *k) 
+static void decrypt(uint32_t *v, const uint32_t *k) 
 {
 	uint32_t i;
 	uint32_t y = v[0], z = v[1], sum = 0xc6ef3720; 
@@ -47,7 +47,7 @@ static void decrypt(uint32_t *v, uint32_t *k)
  * @key: key, must be 16 bytes long
  * @return: the bytes of encrypted data
  */
-int tea_encrypt(uint8_t *src, int size, uint8_t *key)
+int tea_encrypt(uint8_t *src, int size, const uint8_t *key)
 {
 	int a = 0;
 	int i = 0;
@@ -73,7 +73,7 @@ int tea_encrypt(uint8_t *src, int size, uint8_t *key)
  * @key: key, must be 16 bytes long
  * @return: the bytes of data
  */
-int tea_decrypt(uint8_t *src, int size, uint8_t *key)
+int tea_decrypt(uint8_t *src, int size, const uint8_t *key)
 {
 	int i = 0;
 	int num = 0;
