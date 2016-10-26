@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <string.h>
+
 #include "tea.h"
 
 /*
@@ -24,12 +27,12 @@ static void encrypt(uint32_t *v, const uint32_t *k)
  * @v: the data need to be encrypted, must be 8 bytes long
  * @k: key, must be 16 bytes long
  */
-static void decrypt(uint32_t *v, const uint32_t *k) 
+static void decrypt(uint32_t *v, const uint32_t *k)
 {
 	uint32_t i;
-	uint32_t y = v[0], z = v[1], sum = 0xc6ef3720; 
-	uint32_t delta = 0x9e3779b9;            
-	uint32_t a = k[0], b = k[1], c = k[2], d = k[3];    
+	uint32_t y = v[0], z = v[1], sum = 0xc6ef3720;
+	uint32_t delta = 0x9e3779b9;
+	uint32_t a = k[0], b = k[1], c = k[2], d = k[3];
 
 	for (i = 0; i < 32; i++) {
 		z -= ((y << 4) + c) ^ (y + sum) ^ ((y >> 5) + d);
@@ -42,50 +45,69 @@ static void decrypt(uint32_t *v, const uint32_t *k)
 }
 
 /*
- * @src: must be multiple of 8 bytes
- * @size: size of src
+ * @clear_text: the original plain text
+ * @text_len: length of clear_text or cipher_text
  * @key: key, must be 16 bytes long
- * @return: the bytes of encrypted data
+ * @return: cipher_text and must be freed outside this function
  */
-int tea_encrypt(uint8_t *src, int size, const uint8_t *key)
+uint8_t *tea_encrypt(const uint8_t *clear_text, int *text_len, const uint8_t *key)
 {
-	int a = 0;
-	int i = 0;
-	int num = 0;
-	
-	/* if the size of data is not multiple of 8 bytes, just add zeros */
-	a = size % 8;
-	if (a != 0)
-		for (i = 0; i < 8 - a; i++)
-			src[size++] = 0;
+	int i;
+
+	/* PKCS7 padding */
+	uint8_t padding_len = 8 - *text_len % 8;
+
+	int len = *text_len + padding_len;
+	uint8_t *cipher_text = malloc(len);
+	if (!cipher_text)
+		return NULL;
+
+	memcpy(cipher_text, clear_text, *text_len);
+	for (i = 0; i < padding_len; i++)
+		cipher_text[*text_len + i] = padding_len;
 
 	/* encrypting */
-	num = size / 8;
+	int num = len / 8;
 	for (i = 0; i < num; i++)
-		encrypt((uint32_t *)(src + i * 8), (uint32_t *)key);
-	
-	return size;
+		encrypt((uint32_t *)(cipher_text + i * 8), (uint32_t *)key);
+
+	*text_len = len;
+
+	return cipher_text;
 }
 
 /*
- * @src: must be multiple of 8 bytes
- * @size: size of src
+ * @text_len: length of cipher_text or clear_text
  * @key: key, must be 16 bytes long
- * @return: the bytes of data
+ * @return: clear_text and must be freed outside this function
  */
-int tea_decrypt(uint8_t *src, int size, const uint8_t *key)
+uint8_t *tea_decrypt(const uint8_t *cipher_text, int *text_len, const uint8_t *key)
 {
-	int i = 0;
-	int num = 0;
-	
-	/* the size is multiple of 8 bytes or not */
-	if (size % 8 != 0)
-		return 0;
-	
+	int i;
+
+	/* the length must be multiple of 8 bytes */
+	if (*text_len % 8 != 0)
+		return NULL;
+
+	uint8_t *clear_text = malloc(*text_len);
+	if (!clear_text)
+		return NULL;
+
+	memcpy(clear_text, cipher_text, *text_len);
+
 	/* decrypting */
-	num = size / 8;
+	int num = *text_len / 8;
 	for (i = 0; i < num; i++)
-		decrypt((uint32_t *)(src + i * 8), (uint32_t *)key);
-	
-	return size;
+		decrypt((uint32_t *)(clear_text + i * 8), (uint32_t *)key);
+
+	uint8_t padding_len = clear_text[*text_len - 1];
+
+	if (padding_len >= 1 && padding_len <= 8) {
+		*text_len -= padding_len;
+	} else {
+		free(clear_text);
+		return NULL;
+	}
+
+	return clear_text;
 }

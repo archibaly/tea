@@ -1,26 +1,29 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "tea.h"
 
-#define KEY	"4nu&f%0(*&<%!@*7"
-
 int main()
 {
-	uint8_t buf[32] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+	uint8_t *buf = "some clear text";
+	int len = strlen(buf);
 
-	int n = tea_encrypt((uint8_t *)buf, 20, KEY);
+	uint8_t *cipher_text = tea_encrypt(buf, &len, (uint8_t *)TEA_KEY);
 
 	int i;
-	for (i = 0; i < n; i++)
-		printf("%d ", buf[i]);
+	for (i = 0; i < len; i++)
+		printf("0x%02x ", cipher_text[i]);
 	printf("\n");
 
-	n = tea_decrypt((uint8_t *)buf, n, KEY);
+	uint8_t *clear_text = tea_decrypt(cipher_text, &len, (uint8_t *)TEA_KEY);
 
-	for (i = 0; i < n; i++)
-		printf("%d", buf[i]);
+	for (i = 0; i < len; i++)
+		printf("%c", clear_text[i]);
 	printf("\n");
+
+	free(cipher_text);
+	free(clear_text);
 
 	return 0;
 }
